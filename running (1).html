@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Training Pace Calculator</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f3f4f6;
+            margin: 0;
+            padding: 40px 20px;
+            color: #374151;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        h2 {
+            color: #1f2937;
+            font-size: 24px;
+            margin-top: 0;
+            border-bottom: 2px solid #3b82f6;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .instructions {
+            margin-bottom: 25px;
+            color: #4b5563;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        select, input[type="text"] {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        input[type="text"]:focus, select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+        button {
+            width: 100%;
+            background-color: #3fa9f5;
+            color: white;
+            padding: 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-bottom: 30px;
+        }
+        button:hover {
+            background-color: #2b8ccd;
+        }
+        .table-container {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+        }
+        th, td {
+            border: 1px solid #f3f4f6;
+            padding: 14px;
+        }
+        th {
+            color: #9ca3af;
+            font-weight: 600;
+            font-size: 14px;
+            background-color: #fafafa;
+        }
+        td:first-child {
+            font-weight: bold;
+            color: #1f2937;
+        }
+        td {
+            color: #4b5563;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Training Pace Calculator</h2>
+    <p class="instructions">Select your race distance and enter your race time to calculate your workout splits.</p>
+
+    <div class="input-group">
+        <label for="distanceSelect">Race Distance</label>
+        <select id="distanceSelect">
+            <option value="5000">5K (5000m)</option>
+            <option value="3200">3200m</option>
+            <option value="1600" selected>1600m / Mile</option>
+            <option value="800">800m</option>
+            <option value="400">400m</option>
+            <option value="200">200m</option>
+            <option value="100">100m</option>
+        </select>
+    </div>
+
+    <div class="input-group">
+        <label for="timeInput">Race Time (MM:SS)</label>
+        <input type="text" id="timeInput" value="5:00" placeholder="e.g. 5:00">
+    </div>
+
+    <button onclick="calculateSplits()">Calculate Splits</button>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Rep<br>Dist</th>
+                    <th>Race Pace<br>(100%)</th>
+                    <th>VO2 Max<br>(106%)</th>
+                    <th>Threshold<br>(115%)</th>
+                    <th>Tempo<br>(125%)</th>
+                    <th>Easy<br>(140%)</th>
+                </tr>
+            </thead>
+            <tbody id="resultsTable">
+                </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // Utility to parse MM:SS or SS.x into total seconds
+    function parseTimeToSeconds(timeStr) {
+        const parts = timeStr.trim().split(':');
+        if (parts.length === 2) {
+            return (parseInt(parts[0], 10) * 60) + parseFloat(parts[1]);
+        } else if (parts.length === 1) {
+            return parseFloat(parts[0]);
+        }
+        return null;
+    }
+
+    // Utility to format seconds back into M:SS.x
+    function formatTime(totalSeconds) {
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        let secStr = seconds.toFixed(1);
+        
+        // Pad with leading zero if less than 10
+        if (seconds < 10) {
+            secStr = "0" + secStr;
+        }
+        return minutes + ":" + secStr;
+    }
+
+    function calculateSplits() {
+        const distanceStr = document.getElementById('distanceSelect').value;
+        const timeStr = document.getElementById('timeInput').value;
+        
+        const raceDistanceMeters = parseInt(distanceStr, 10);
+        const totalSeconds = parseTimeToSeconds(timeStr);
+
+        if (!totalSeconds || isNaN(totalSeconds)) {
+            alert("Please enter a valid time (e.g., 5:00).");
+            return;
+        }
+
+        // Base pace in seconds per meter
+        const basePace = totalSeconds / raceDistanceMeters;
+
+        // Configuration matching the original logic
+        const intervalDistances = [200, 400, 500, 800, 1000, 1200, 1600];
+        const effortModifiers = [1.00, 1.06, 1.15, 1.25, 1.40];
+
+        const tbody = document.getElementById('resultsTable');
+        tbody.innerHTML = ''; // Clear previous results
+
+        // Generate the rows dynamically
+        intervalDistances.forEach(dist => {
+            const tr = document.createElement('tr');
+            
+            // First cell: Rep Distance
+            const tdDist = document.createElement('td');
+            tdDist.textContent = dist + "m";
+            tr.appendChild(tdDist);
+
+            // Cells for each pace block
+            effortModifiers.forEach(modifier => {
+                const tdTime = document.createElement('td');
+                const intervalTimeSeconds = basePace * dist * modifier;
+                tdTime.textContent = formatTime(intervalTimeSeconds);
+                tr.appendChild(tdTime);
+            });
+
+            tbody.appendChild(tr);
+        });
+    }
+
+    // Run the calculation immediately on load so the default 5:00/1600m chart shows
+    window.onload = calculateSplits;
+</script>
+
+</body>
+</html>
